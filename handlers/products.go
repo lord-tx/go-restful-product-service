@@ -4,6 +4,9 @@ import (
 	"go-restful-product-service/data"
 	"log"
 	"net/http"
+	"strconv"
+
+	"github.com/gorilla/mux"
 )
 
 type Product struct {
@@ -14,25 +17,7 @@ func NewProduct(l *log.Logger) *Product {
 	return &Product{l: l}
 }
 
-func (p *Product) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodGet {
-		p.getProducts(rw, r)
-		return
-	}
-
-	if r.Method == http.MethodPost {
-		p.addProduct(rw, r)
-		return
-	}
-
-	if r.Method == http.MethodPut {
-
-	}
-
-	rw.WriteHeader(http.StatusMethodNotAllowed)
-}
-
-func (p *Product) getProducts(rw http.ResponseWriter, r *http.Request) {
+func (p *Product) GetProducts(rw http.ResponseWriter, r *http.Request) {
 	p.l.Println("Handle GET Products")
 	lp := data.GetProducts()
 
@@ -43,7 +28,7 @@ func (p *Product) getProducts(rw http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (p *Product) addProduct(rw http.ResponseWriter, r *http.Request) {
+func (p *Product) AddProduct(rw http.ResponseWriter, r *http.Request) {
 	p.l.Println("Handle ADD Products")
 	prod := &data.Product{}
 	err := prod.FromJSON(r.Body)
@@ -54,4 +39,34 @@ func (p *Product) addProduct(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	data.AddProduct(prod)
+}
+
+func (p *Product) UpdateProduct(rw http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+
+	if err != nil {
+		http.Error(rw, "Unable to convert ID", http.StatusBadRequest)
+		return
+	}
+
+	p.l.Println("Handle PUT Product", id)
+
+	prod := &data.Product{}
+
+	err = prod.FromJSON(r.Body)
+	if err != nil {
+		http.Error(rw, "Unable to unmarshal json", http.StatusBadRequest)
+	}
+
+	err = data.UpdateProduct(id, prod)
+	if err == data.ErrProdNotFound {
+		http.Error(rw, "Product not found", http.StatusNotFound)
+		return
+	}
+
+	if err != nil {
+		http.Error(rw, "Product not found", http.StatusInternalServerError)
+		return
+	}
 }

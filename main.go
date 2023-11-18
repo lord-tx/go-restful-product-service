@@ -9,6 +9,8 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/gorilla/mux"
 )
 
 func main() {
@@ -17,8 +19,16 @@ func main() {
 
 	ph := handlers.NewProduct(l)
 
-	sm := http.NewServeMux()
-	sm.Handle("/products", ph)
+	sm := mux.NewRouter()
+
+	getRouter := sm.Methods(http.MethodGet).Subrouter()
+	getRouter.HandleFunc("/", ph.GetProducts)
+
+	postRouter := sm.Methods(http.MethodPost).Subrouter()
+	postRouter.HandleFunc("/", ph.AddProduct)
+
+	putRouter := sm.Methods(http.MethodPut).Subrouter()
+	putRouter.HandleFunc("/{id:[0-9]+}", ph.UpdateProduct)
 
 	s := http.Server{
 		Addr:         ":8080",
@@ -30,7 +40,7 @@ func main() {
 	}
 
 	go func() {
-		l.Println("Starting server on port 9090")
+		l.Println("Starting server on port 8080")
 
 		err := s.ListenAndServe()
 		if err != nil && err != http.ErrServerClosed {
