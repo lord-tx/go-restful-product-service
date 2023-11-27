@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"go-restful-product-service/handlers"
+	"go-restful-product-service/product-api/handlers"
 	"log"
 	"net/http"
 	"os"
